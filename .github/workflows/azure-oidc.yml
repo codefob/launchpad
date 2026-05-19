@@ -28,4 +28,3 @@ jobs:
         run: |
           echo "Checking Azure account..."
           az account show
-``
