@@ -51,13 +51,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
-  lifecycle {
-    ignore_changes = [
-      oidc_issuer_enabled,
-      workload_identity_enabled,
-      default_node_pool[0].node_count
-    ]
-  }  
+
 
 resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   count                 = var.create_aks ? 1 : 0
@@ -84,3 +78,11 @@ resource "azurerm_role_assignment" "acr_pull" {
   role_definition_name = "AcrPull"
   scope                = data.azurerm_container_registry.acr.id
 }
+
+lifecycle {
+  ignore_changes = [
+    oidc_issuer_enabled,
+    workload_identity_enabled,
+    default_node_pool[0].node_count
+  ]
+}  
