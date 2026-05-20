@@ -1,21 +1,19 @@
-# ✅ Resource Group (AKS)
-resource "azurerm_resource_group" "rg" {
-  name     = "lab2026"
-  location = "centralus"
-}
-
-#  Existing ACR (UPDATED RG)
-data "azurerm_container_registry" "acr" {
-  name                = "codefob"
-  resource_group_name = "acr-2025"   
-}
-
-
 variable "create_aks" {
   type    = bool
   default = false
 }
 
+# AKS resource group
+resource "azurerm_resource_group" "rg" {
+  name     = "lab2026"
+  location = "centralus"
+}
+
+# Existing ACR
+data "azurerm_container_registry" "acr" {
+  name                = "codefob"
+  resource_group_name = "acr-2025"
+}
 
 # Existing AKS (used only when create_aks = false)
 data "azurerm_kubernetes_cluster" "existing_aks" {
@@ -24,9 +22,9 @@ data "azurerm_kubernetes_cluster" "existing_aks" {
   resource_group_name = "lab2026"
 }
 
-
-# AKS Cluster
+# New AKS (used only when create_aks = true)
 resource "azurerm_kubernetes_cluster" "aks" {
+  count               = var.create_aks ? 1 : 0
   name                = "aks-github-actions"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -36,7 +34,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
     name       = "sysnp"
     node_count = 1
     vm_size    = "Standard_DS2_v2"
-     }
+    mode       = "System"
+  }
 
   identity {
     type = "SystemAssigned"
@@ -58,20 +57,33 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
-# User Node Pool
+# Locals to unify references whether AKS is new or existing
+locals {
+  aks_id = var.create_aks
+    ? azurerm_kubernetes_cluster.aks[0].id
+    : data.azurerm_kubernetes_cluster.existing_aks[0].id
+
+  kubelet_object_id = var.create_aks
+    ? azurerm_kubernetes_cluster.aks[0].kubelet_identity[0].object_id
+    : data.azurerm_kubernetes_cluster.existing_aks[0].kubelet_identity[0].object_id
+}
+
+# User node pool — create only when creating the AKS cluster in Terraform
 resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
+  count                 = var.create_aks ? 1 : 0
   name                  = "usernp01"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks[0].id
 
   vm_size    = "Standard_DS2_v2"
   node_count = 1
   mode       = "User"
 
-  orchestrator_version = azurerm_kubernetes_cluster.aks.kubernetes_version
+  orchestrator_version = azurerm_kubernetes_cluster.aks[0].kubernetes_version
 }
-# --- AKS integration with ACR registry
+
+# ---- AKS integration with ACR 
 resource "azurerm_role_assignment" "acr_pull" {
-  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  principal_id         = local.kubelet_object_id
   role_definition_name = "AcrPull"
   scope                = data.azurerm_container_registry.acr.id
 }
