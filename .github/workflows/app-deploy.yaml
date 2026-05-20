@@ -1,0 +1,63 @@
+name: Build and Deploy App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - "k8s/**"
+      - ".github/workflows/app-deploy.yml"
+
+permissions:
+  id-token: write        # ✅ REQUIRED for OIDC
+  contents: read
+
+env:
+  ACR_NAME: codefob
+  RESOURCE_GROUP: lab2026
+  CLUSTER_NAME: aks-github-actions
+  IMAGE_NAME: hello-world
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ✅ Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ✅ Azure Login (OIDC)
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ✅ Build & Push Docker image to ACR
+      - name: Build and Push Image to ACR
+        uses: azure/acr-build@v1
+        with:
+          registry: ${{ env.ACR_NAME }}.azurecr.io
+          repository: ${{ env.IMAGE_NAME }}
+          image: latest
+          folder: app
+
+      # ✅ Set AKS context
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          cluster-name: ${{ env.CLUSTER_NAME }}
+
+      # ✅ Deploy to AKS
+      - name: Deploy to AKS
+        uses: azure/k8s-deploy@v4
+        with:
+          manifests: |
+            k8s/deployment.yaml
+            k8s/service.yaml
+          images: |
+            ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
