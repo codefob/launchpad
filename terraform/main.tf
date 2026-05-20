@@ -55,15 +55,6 @@ resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
 
   orchestrator_version = azurerm_kubernetes_cluster.aks.kubernetes_version
 }
-
-#--ACR Pull Permission pull images 
-resource "azurerm_role_assignment" "acr_pull" {
-  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
-  role_definition_name = "AcrPull"
-  scope                = data.azurerm_container_registry.acr.id
-}
-
-
 # --- AKS integration with ACR registry
 resource "azurerm_role_assignment" "acr_pull" {
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
