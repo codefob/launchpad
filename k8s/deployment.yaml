@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: sample-app
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: sample
@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: sample-app
-        image: codefob.azurecr.io/sample:latest   
+        image: codefob.azurecr.io/hello-world:latest
         ports:
         - containerPort: 80
