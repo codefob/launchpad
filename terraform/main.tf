@@ -49,8 +49,15 @@ resource "azurerm_kubernetes_cluster" "aks" {
   tags = {
     environment = "dev"
   }
-}
+  lifecycle {
+    ignore_changes = [
+      oidc_issuer_enabled,
+      workload_identity_enabled,
+      default_node_pool[0].node_count
+    ]
+  }
 
+}
 
 
 resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
@@ -77,12 +84,4 @@ resource "azurerm_role_assignment" "acr_pull" {
   principal_id         = local.kubelet_object_id
   role_definition_name = "AcrPull"
   scope                = data.azurerm_container_registry.acr.id
-}
-
-lifecycle {
-  ignore_changes = [
-    oidc_issuer_enabled,
-    workload_identity_enabled,
-    default_node_pool[0].node_count
-  ]
 }  
