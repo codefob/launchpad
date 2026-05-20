@@ -58,15 +58,13 @@ resource "azurerm_kubernetes_cluster" "aks" {
 }
 
 # Locals to unify references whether AKS is new or existing
-locals {
-  aks_id = var.create_aks
-    ? azurerm_kubernetes_cluster.aks[0].id
-    : data.azurerm_kubernetes_cluster.existing_aks[0].id
 
-  kubelet_object_id = var.create_aks
-    ? azurerm_kubernetes_cluster.aks[0].kubelet_identity[0].object_id
-    : data.azurerm_kubernetes_cluster.existing_aks[0].kubelet_identity[0].object_id
+locals {
+  aks_id = var.create_aks ? azurerm_kubernetes_cluster.aks[0].id : data.azurerm_kubernetes_cluster.existing_aks[0].id
+
+  kubelet_object_id = var.create_aks ? azurerm_kubernetes_cluster.aks[0].kubelet_identity[0].object_id : data.azurerm_kubernetes_cluster.existing_aks[0].kubelet_identity[0].object_id
 }
+
 
 # User node pool — create only when creating the AKS cluster in Terraform
 resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
