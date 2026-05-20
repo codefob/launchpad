@@ -10,6 +10,15 @@ data "azurerm_container_registry" "acr" {
   resource_group_name = "acr-2025"   
 }
 
+
+# Existing AKS (used only when create_aks = false)
+data "azurerm_kubernetes_cluster" "existing_aks" {
+  count               = var.create_aks ? 0 : 1
+  name                = "aks-github-actions"
+  resource_group_name = "lab2026"
+}
+
+
 # AKS Cluster
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "aks-github-actions"
