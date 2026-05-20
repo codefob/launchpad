@@ -11,6 +11,12 @@ data "azurerm_container_registry" "acr" {
 }
 
 
+variable "create_aks" {
+  type    = bool
+  default = false
+}
+
+
 # Existing AKS (used only when create_aks = false)
 data "azurerm_kubernetes_cluster" "existing_aks" {
   count               = var.create_aks ? 0 : 1
