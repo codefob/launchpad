@@ -26,6 +26,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = "aksgithub"
 
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
+
   default_node_pool {
     name       = "sysnp"
     node_count = 1
@@ -46,6 +50,14 @@ resource "azurerm_kubernetes_cluster" "aks" {
     environment = "dev"
   }
 }
+
+  lifecycle {
+    ignore_changes = [
+      oidc_issuer_enabled,
+      workload_identity_enabled,
+      default_node_pool[0].node_count
+    ]
+  }  
 
 resource "azurerm_kubernetes_cluster_node_pool" "userpool" {
   count                 = var.create_aks ? 1 : 0
