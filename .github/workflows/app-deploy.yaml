@@ -10,7 +10,7 @@ on:
       - ".github/workflows/app-deploy.yml"
 
 permissions:
-  id-token: write        # ✅ REQUIRED for OIDC
+  id-token: write
   contents: read
 
 env:
@@ -36,14 +36,20 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # ✅ Build & Push Docker image to ACR
-      - name: Build and Push Image to ACR
-        uses: azure/acr-build@v1
-        with:
-          registry: ${{ env.ACR_NAME }}.azurecr.io
-          repository: ${{ env.IMAGE_NAME }}
-          image: latest
-          folder: app
+      # ✅ Login to ACR (uses OIDC session)
+      - name: Login to ACR
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+
+      # ✅ Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest ./app
+
+      # ✅ Push image to ACR
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:latest
 
       # ✅ Set AKS context
       - name: Set AKS Context
